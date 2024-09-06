@@ -15,11 +15,16 @@ import shutil
 import torch
 
 import h5py
+import pickle
 
 import init_path
 from groot_imitation.groot_algo import GROOT_ROOT_PATH
+from groot_imitation.groot_algo import THIRD_PARTY_PATH
 from groot_imitation.groot_algo.o3d_modules import convert_convention
 from groot_imitation.groot_algo.misc_utils import get_annotation_path
+
+import sys
+sys.path.append("/fs/cfar-projects/waypoint_rl/BAKU_original/BAKU/GROOT/third_party/XMem")
 from model.network import XMem
 from inference.interact.s2m_controller import S2MController
 from inference.interact.fbrs_controller import FBRSController
@@ -72,9 +77,10 @@ def launch_gui(args):
 def main():
     # Arguments parsing
     parser = ArgumentParser()
-    parser.add_argument('--model', default=os.path.join(GROOT_ROOT_PATH, 'third_party/xmem_checkpoints/XMem.pth'))
-    parser.add_argument('--s2m_model', default=os.path.join(GROOT_ROOT_PATH, 'third_party/xmem_checkpoints/s2m.pth'))
-    parser.add_argument('--fbrs_model', default=os.path.join(GROOT_ROOT_PATH, 'third_party/xmem_checkpoints/fbrs.pth'))
+    GROOT_ROOT_PATH="/fs/cfar-projects/waypoint_rl/BAKU_original/BAKU/GROOT"
+    parser.add_argument('--model', default=os.path.join(GROOT_ROOT_PATH, 'third_party/XMem/xmem_checkpoints/XMem.pth'))
+    parser.add_argument('--s2m_model', default=os.path.join(GROOT_ROOT_PATH, 'third_party/XMem/xmem_checkpoints/s2m.pth'))
+    parser.add_argument('--fbrs_model', default=os.path.join(GROOT_ROOT_PATH, 'third_party/XMem/xmem_checkpoints/fbrs.pth'))
 
     """
     Priority 1: If a "images" folder exists in the workspace, we will read from that directory
@@ -117,34 +123,52 @@ def main():
     demo_idx = 0
     img_idx = 0
     
-    with h5py.File(args.dataset_path, 'r') as f:
-        first_frame = convert_convention(f[f"data/demo_{demo_idx}/obs/agentview_rgb"][()][img_idx])[..., ::-1]
-        if "real" in f["data"].attrs:
-            args.real = f["data"].attrs["real"]
-    # annotation_path = # os.path.join(annotation_folder, dataset_folder_name)
-    annotation_path = get_annotation_path(args.dataset_path)
-    tmp_path = tmp_folder
-    os.makedirs(annotation_path, exist_ok=True)
-    os.makedirs(tmp_path, exist_ok=True)
+    # with h5py.File(args.dataset_path, 'r') as f:
+    #     first_frame = convert_convention(f[f"data/demo_{demo_idx}/obs/agentview_rgb"][()][img_idx])[..., ::-1]
+    #     if "real" in f["data"].attrs:
+    #         args.real = f["data"].attrs["real"]
 
-    os.makedirs(os.path.join(tmp_path, "images"), exist_ok=True)
-    first_frame = cv2.resize(first_frame, (args.size, args.size), interpolation=cv2.INTER_AREA)
-    # if args.real:
-    #     first_frame = cv2.cvtColor(cv2.flip(first_frame, 0), cv2.COLOR_BGR2RGB)
-    cv2.imwrite(os.path.join(os.path.join(tmp_path, "images", "frame.jpg")), first_frame)
-    print(tmp_path)
-    args.images = tmp_path
-    args.workspace = tmp_path
+    path_list = sorted(os.listdir(args.dataset_path))[25:]
+    # path_list = ["drawer_open.pkl"]
+    pixel_key = 'pixels'
+    real_robot = False
 
-    print(args.images, tmp_folder, args.real)
+    for pickle_file in path_list:
+        path = os.path.join(args.dataset_path, pickle_file)
+        if pickle_file.split(".")[-1] != "pkl":
+            continue
+        with open(path, 'rb') as f:
+            try:
+                expert = pickle.load(f)
+            except:
+                print(f"Error loading {path}")
+                continue
+            if 'microwave' in path:
+                first_frame = expert['observations'][13][pixel_key][0]
+            else:
+                first_frame = expert['observations'][0][pixel_key][0]
+            args.real = True
+        # annotation_path = # os.path.join(annotation_folder, dataset_folder_name)
+        annotation_path = get_annotation_path(path)
+        tmp_path = tmp_folder
+        os.makedirs(annotation_path, exist_ok=True)
+        os.makedirs(tmp_path, exist_ok=True)
 
-    launch_gui(args)
+        os.makedirs(os.path.join(tmp_path, "images"), exist_ok=True)
+        first_frame = cv2.resize(first_frame, (args.size, args.size), interpolation=cv2.INTER_AREA)
+        if not real_robot:
+            first_frame = cv2.cvtColor(first_frame, cv2.COLOR_BGR2RGB)
+        cv2.imwrite(os.path.join(os.path.join(tmp_path, "images", "frame.jpg")), first_frame)
+        args.images = tmp_path
+        args.workspace = tmp_path
 
-    # copy a image from a folder to another
-    shutil.copyfile(os.path.join(tmp_path, "images", "frame.jpg"), os.path.join(annotation_path, "frame.jpg"))
-    shutil.copyfile(os.path.join(tmp_path, "masks", "frame.png"), os.path.join(annotation_path, "frame_annotation.png"))
-    # remove the folder
-    shutil.rmtree(tmp_path)
+        launch_gui(args)
+
+        # copy a image from a folder to another
+        shutil.copyfile(os.path.join(tmp_path, "images", "frame.jpg"), os.path.join(annotation_path, "frame.jpg"))
+        shutil.copyfile(os.path.join(tmp_path, "masks", "frame.png"), os.path.join(annotation_path, "frame_annotation.png"))
+        # remove the folder
+        shutil.rmtree(tmp_path)
 
 if __name__ == '__main__':
     main()

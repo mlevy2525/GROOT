@@ -55,7 +55,7 @@ def dataset_vos_annotation(cfg,
             images = dataset[f"data/{demo}/obs/agentview_rgb"][()]
             image_list = [first_frame]
             for image in images:
-                image_list.append(convert_convention(image, real_robot=is_real_robot))
+                image_list.append(convert_convention(image, real_robot=cfg.is_real_robot))
             image_list = [cv2.resize(image, (first_frame_annotation.shape[1], first_frame_annotation.shape[0]), interpolation=cv2.INTER_AREA) for image in image_list]
             masks = xmem_tracker.track_video(image_list, first_frame_annotation)
 

@@ -2,3 +2,6 @@
 /finalize_result.py~
 /result_annotation.py~
 *.ply
+*/*/*/*/*.pkl
+*/*/*/*/*.mp4
+*.pth

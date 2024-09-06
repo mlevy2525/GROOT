@@ -22,17 +22,21 @@ from groot_imitation.groot_algo import GROOT_ROOT_PATH
 from groot_imitation.groot_algo.misc_utils import VideoWriter
 
 class DinoV2ImageProcessor(object):
-    def __init__(self, args=None):
-        if args is None:
+    def __init__(self, args=None, cfg=None):
+        if args is None and cfg is None:
             self.args = EasyDict()
             self.args.output_dir = ''
             self.args.opts = []
             self.args.pretrained_weights = "https://dl.fbaipublicfiles.com/dinov2/dinov2_vitb14/dinov2_vitb14_pretrain.pth"
             self.args.config_file = os.path.join(GROOT_ROOT_PATH, "../", "third_party/dinov2/dinov2/configs/eval/vitb14_pretrain.yaml")
+        elif cfg is not None:
+            self.args = EasyDict()
+            self.args.output_dir = ''
+            self.args.opts = []
+            self.args.pretrained_weights = "https://dl.fbaipublicfiles.com/dinov2/dinov2_vitb14/dinov2_vitb14_pretrain.pth"
+            self.args.config_file = f"{cfg.groot_path}/third_party/dinov2/dinov2/configs/eval/vitb14_pretrain.yaml"
         else:
             self.args = args
-        # print("*****")
-        print(self.args)
         self.model, self.autocast_dtype = self.setup_and_build_model()
         self.n_last_blocks_list = [1, 4]
         self.n_last_blocks = max(self.n_last_blocks_list)
