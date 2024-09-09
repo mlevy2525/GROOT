@@ -46,11 +46,11 @@ def dataset_vos_annotation(cfg, xmem_tracker, verbose=False):
                 image_list.append(image)
 
         if count % cfg.new_instance_idx == 0 and count != 0 and cfg.new_instance_idx != -1:
-            first_frame_annotation = new_instance.get_new_instance_annotation(image_list[0])
-            first_frame = image_list[0]
+            first_frame = cv2.resize(image_list[0], (first_frame_annotation.shape[1], first_frame_annotation.shape[0]), interpolation=cv2.INTER_AREA)
+            first_frame_annotation = new_instance.get_new_instance_annotation(first_frame)
 
         first_frame_annotation = first_frame_annotation
-        image_list = [cv2.resize(image, (first_frame_annotation.shape[1], first_frame_annotation.shape[0]), interpolation=cv2.INTER_AREA) for image in image_list]
+        image_list = [cv2.resize(image, (first_frame_annotation.shape[0], first_frame_annotation.shape[1]), interpolation=cv2.INTER_AREA) for image in image_list]
         masks = xmem_tracker.track_video(image_list, first_frame_annotation)
 
         if verbose:

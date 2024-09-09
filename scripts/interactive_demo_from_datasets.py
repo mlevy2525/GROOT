@@ -128,15 +128,17 @@ def main():
     #     if "real" in f["data"].attrs:
     #         args.real = f["data"].attrs["real"]
 
-    path_list = sorted(os.listdir(args.dataset_path))[25:]
-    # path_list = ["drawer_open.pkl"]
-    pixel_key = 'pixels'
-    real_robot = False
+    # path_list = sorted(os.listdir(args.dataset_path))
+    path_list = ["0908_pickbottlefromrack.pkl"]
+    pixel_key = 'pixels2'
+    real_robot = True
 
     for pickle_file in path_list:
         path = os.path.join(args.dataset_path, pickle_file)
-        if pickle_file.split(".")[-1] != "pkl":
-            continue
+        # if pickle_file.split(".")[-1] != "pkl":
+        #     continue
+        # if "0902" not in path:
+        #     continue
         with open(path, 'rb') as f:
             try:
                 expert = pickle.load(f)
@@ -146,6 +148,7 @@ def main():
             if 'microwave' in path:
                 first_frame = expert['observations'][13][pixel_key][0]
             else:
+                print(expert['observations'][0].keys())
                 first_frame = expert['observations'][0][pixel_key][0]
             args.real = True
         # annotation_path = # os.path.join(annotation_folder, dataset_folder_name)

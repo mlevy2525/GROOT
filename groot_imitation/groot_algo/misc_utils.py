@@ -154,9 +154,9 @@ def resize_image_to_same_shape(source_img, reference_img=None, reference_size=No
     if reference_img is not None:
         reference_size = (reference_img.shape[0], reference_img.shape[1])
     if source_img.shape[0] >  reference_size[0] or source_img.shape[1] > reference_size[1]:
-        result_img = cv2.resize(source_img, (reference_size[0], reference_size[1]), interpolation=cv2.INTER_NEAREST)
+        result_img = cv2.resize(source_img, (reference_size[1], reference_size[0]), interpolation=cv2.INTER_NEAREST)
     else:
-        result_img = cv2.resize(source_img, (reference_size[0], reference_size[1]), interpolation=cv2.INTER_NEAREST)
+        result_img = cv2.resize(source_img, (reference_size[1], reference_size[0]), interpolation=cv2.INTER_NEAREST)
     return result_img
 
 

@@ -107,7 +107,7 @@ def full_pcd_fn(cfg, depth, rgb_img_input, mask_img_input, first_frame_annotatio
         return np.stack(xyz_list, axis=0), None
 
 
-def object_pcd_fn(cfg, depth, rgb_img_input, mask_img_input, first_frame_annotation, intrinsic_matrix, extrinsic_matrix, fig=None, should_save_plot=False):
+def object_pcd_fn(cfg, depth, rgb_img_input, mask_img_input, first_frame_annotation, intrinsic_matrix, extrinsic_matrix, prev_xyz=None, fig=None, should_save_plot=False):
     if cfg.is_real_robot:
         rgb_img = cv2.cvtColor(rgb_img_input, cv2.COLOR_BGR2RGB)
     else:
@@ -142,8 +142,12 @@ def object_pcd_fn(cfg, depth, rgb_img_input, mask_img_input, first_frame_annotat
             colors = o3d_pc.get_colors()
             colors_list.append(colors)
         else:
-            xyz_list.append(np.zeros((512, 3)))
-            colors_list.append(np.zeros((512, 3)))
+            if prev_xyz is not None:
+                xyz_list.append(prev_xyz[mask_idx - 1])
+                colors_list.append(np.zeros_like(prev_xyz[mask_idx - 1]))
+            else:
+                xyz_list.append(np.zeros((512, 3)))
+                colors_list.append(np.zeros((512, 3)))
 
     if should_save_plot:
         plot = save_plot(xyz_list, fig, colors_list)
@@ -151,7 +155,7 @@ def object_pcd_fn(cfg, depth, rgb_img_input, mask_img_input, first_frame_annotat
     else:
         return np.stack(xyz_list, axis=0), None
 
-def object_pcd_generation(cfg, save_plots=False):
+def object_pcd_generation(cfg, save_plots=False, show_color=False):
     # sys.path.append(cfg.depth_path)
     # from metric_depth.depth_anything_v2.dpt import DepthAnythingV2
     # model_configs = {
@@ -198,7 +202,7 @@ def object_pcd_generation(cfg, save_plots=False):
     final_xyz = []
     for (idx, demo) in tqdm(enumerate(dataset['observations'])):
         # Create figure
-        if save_plots:
+        if save_plots or show_color:
             fig = go.Figure()
         else:
             fig = None  
@@ -211,7 +215,12 @@ def object_pcd_generation(cfg, save_plots=False):
         frames = []
         count = 0
         for (image, mask, depth) in zip(images, masks, depths):
-            points, plot = object_pcd_fn(cfg, depth, image, mask, first_frame_annotation, intrinsic_matrix, extrinsic_matrix, fig, count % 5 == 0 and save_plots)
+            if show_color:
+                points, _ = full_pcd_fn(cfg, depth, image, mask, first_frame_annotation, intrinsic_matrix, extrinsic_matrix, fig, True)
+                fig.show()
+                breakpoint()
+            prev = None if count == 0 else episode_xyz[-1]
+            points, plot = object_pcd_fn(cfg, depth, image, mask, first_frame_annotation, intrinsic_matrix, extrinsic_matrix, prev, fig, count % 5 == 0 and save_plots)
             if count % 5 == 0 and save_plots:
                 frames.append(plot)
             episode_xyz.append(points)

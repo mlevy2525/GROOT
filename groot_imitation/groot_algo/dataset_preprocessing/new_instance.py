@@ -13,8 +13,8 @@ class NewInstance:
         self.sam_operator.init()
         self.scm_module = SegmentationCorrespondenceModel(dinov2=self.dinov2, sam_operator=self.sam_operator)
 
-        self.first_frame = first_frame
-        self.first_frame_annotation = first_frame_annotation
+        self.first_frame = first_frame.copy()
+        self.first_frame_annotation = first_frame_annotation.copy()
         
         self.xmem_input_size = first_frame.shape[:2]
 
